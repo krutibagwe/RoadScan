@@ -1,0 +1,17 @@
+# Ignore Python cache and virtual environment
+__pycache__/
+venv/
+env/
+
+# Ignore database and model files
+backend/data/plates.db
+models/
+
+# Ignore video files
+data/
+processed/
+results/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
