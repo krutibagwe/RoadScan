@@ -5,8 +5,13 @@ import os
 import pandas as pd
 from ultralytics import YOLO
 
+# Ensure necessary folders exist
+os.makedirs("data", exist_ok=True)
+os.makedirs("results", exist_ok=True)
+os.makedirs("processed", exist_ok=True)
+
 # Load YOLO model
-model = YOLO("models/best.pt") 
+model = YOLO("models/best.pt")
 
 # Load OCR
 reader = easyocr.Reader(["en"])
@@ -16,11 +21,19 @@ def process_video(video_name):
     output_csv = os.path.join("results", f"{video_name}.csv")
     output_video_path = os.path.join("processed", video_name)
 
+    if not os.path.exists(video_path):
+        print(f"Error: File '{video_path}' not found!")
+        return False
+
     cap = cv2.VideoCapture(video_path)
     fps = int(cap.get(cv2.CAP_PROP_FPS))
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    if not cap.isOpened():
+        print(f"Error: Could not open video '{video_path}'")
+        return False
 
     out = cv2.VideoWriter(output_video_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (frame_width, frame_height))
 
@@ -31,12 +44,11 @@ def process_video(video_name):
         if not ret:
             break
 
-        results = model(frame, conf = 0.5)
-        result = results[0]  # Extract first result
+        results = model(frame, conf=0.5)
+        result = results[0]
 
-        for box in result.boxes.data:  # ✅ FIXED: Correct way to access boxes
-            x_min, y_min, x_max, y_max, conf, cls = map(int, box[:6])  # Extract bbox
-
+        for box in result.boxes.data:
+            x_min, y_min, x_max, y_max, conf, cls = map(int, box[:6])
             plate_crop = frame[y_min:y_max, x_min:x_max]
 
             ocr_results = reader.readtext(plate_crop)
@@ -49,7 +61,11 @@ def process_video(video_name):
 
     cap.release()
     out.release()
-    pd.DataFrame(plate_data).to_csv(output_csv, index=False)
-    print(f"Processed {video_name}")
-# Change this to the actual video file in data/
-process_video("sample2.mp4")  
+
+    # Save plate data
+    df = pd.DataFrame(plate_data)
+    if not df.empty:
+        df.to_csv(output_csv, index=False)
+
+    print(f"✅ Processed {video_name}")
+    return True
