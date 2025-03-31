@@ -15,3 +15,5 @@ results/
 # Ignore system files
 .DS_Store
 Thumbs.db
+
+database.db
