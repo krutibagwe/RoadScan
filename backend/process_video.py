@@ -1,9 +1,9 @@
 import cv2
 import easyocr
-import torch
 import os
 import pandas as pd
 from ultralytics import YOLO
+from backend.database import insert_plate
 
 # Ensure necessary folders exist
 os.makedirs("data", exist_ok=True)
@@ -11,7 +11,7 @@ os.makedirs("results", exist_ok=True)
 os.makedirs("processed", exist_ok=True)
 
 # Load YOLO model
-model = YOLO("models/best.pt")
+model = YOLO("models/license_plate_detector.pt")
 
 # Load OCR
 reader = easyocr.Reader(["en"])
@@ -53,7 +53,13 @@ def process_video(video_name):
 
             ocr_results = reader.readtext(plate_crop)
             for bbox, text, prob in ocr_results:
-                plate_data.append({"video": video_name, "timestamp": i // fps, "plate": text})
+                timestamp = round(i / fps, 3)
+                plate_data.append({"video": video_name, "timestamp": timestamp, "plate": text})
+
+                # Store in database
+                insert_plate(video_name, text, timestamp)
+
+                # Draw bounding box and label on frame
                 cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
                 cv2.putText(frame, text, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
@@ -62,7 +68,7 @@ def process_video(video_name):
     cap.release()
     out.release()
 
-    # Save plate data
+    # Save plate data to CSV
     df = pd.DataFrame(plate_data)
     if not df.empty:
         df.to_csv(output_csv, index=False)

@@ -3,33 +3,19 @@ import shutil
 import os
 import sqlite3
 from backend.process_video import process_video
+from backend.database import init_db, search_plate
 
 app = FastAPI()
 
 UPLOAD_DIR = "data"
 PROCESSED_DIR = "processed"
-DB_PATH = "database.db"
 
 # Ensure necessary folders exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 
-# Initialize SQLite database
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS plates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            video TEXT,
-            timestamp INTEGER,
-            plate TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-init_db()  # Call this function on startup
+# Initialize database on startup
+init_db()
 
 @app.post("/upload/")
 async def upload_video(video: UploadFile = File(...)):
@@ -51,13 +37,9 @@ async def upload_video(video: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 @app.get("/search/{plate_number}")
-async def search_plate(plate_number: str):
+async def get_plate(plate_number: str):
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("SELECT video, timestamp FROM plates WHERE plate LIKE ?", (f"%{plate_number}%",))
-        results = cursor.fetchall()
-        conn.close()
+        results = search_plate(plate_number)
 
         if not results:
             raise HTTPException(status_code=404, detail="No matching plates found.")
