@@ -4,7 +4,7 @@ venv/
 env/
 
 # Ignore database and model files
-backend/data/plates.db
+backend/data/database.db
 models/
 
 # Ignore video files
