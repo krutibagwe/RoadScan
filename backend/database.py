@@ -7,6 +7,8 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
+    cursor.execute("DROP TABLE IF EXISTS plates")
+
     # Create a new table with REAL type for timestamp (supports decimals)
     cursor.execute('''
         CREATE TABLE plates (

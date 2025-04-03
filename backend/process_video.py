@@ -12,6 +12,7 @@ os.makedirs("processed", exist_ok=True)
 
 # Load YOLO model
 model = YOLO("models/license_plate_detector.pt")
+# model = YOLO("models/best.pt")
 
 # Load OCR
 reader = easyocr.Reader(["en"])
