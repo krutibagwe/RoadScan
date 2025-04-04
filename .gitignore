@@ -17,3 +17,6 @@ results/
 Thumbs.db
 
 database.db
+
+# Ignore firebase config file
+frontend/src/firebaseConfig.js
